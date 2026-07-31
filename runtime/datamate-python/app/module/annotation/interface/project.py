@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.db.session import get_db
 from app.db.models import LabelingProject
@@ -45,9 +45,15 @@ async def login_label_studio_project(
         logger.warning(f"Unauthorized access attempt to annotation login: mapping_id={mapping_id}")
         raise HTTPException(status_code=401, detail="Authentication required")
 
-    # 校验 mapping_id 对应的项目存在
+    # 兼容两类调用方：
+    # - DataMate 映射 UUID（当前接口约定）
+    # - Label Studio 项目 ID（旧版前端仍可能传入）
+    # 两者最终都需要定位到同一条 LabelingProject 映射记录。
     stmt = select(LabelingProject).where(
-        LabelingProject.id == mapping_id,
+        or_(
+            LabelingProject.id == mapping_id,
+            LabelingProject.labeling_project_id == mapping_id,
+        ),
         LabelingProject.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
@@ -917,4 +923,3 @@ async def delete_mapping(
     except Exception as e:
         logger.error(f"Error deleting mapping: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-
