@@ -50,8 +50,9 @@ public:
       database: 1Gi
       operator: 1Gi
   secrets:
-    # Set to false when using Sealed Secrets (managed by install script)
-    create: false
+    # Set to true so the chart creates the datamate-conf Secret.
+    # The install script writes secrets into this block via sed before helm install.
+    create: true
     data:
       DB_PASSWORD: ""  # Set via install script or --set
       CERT_PASS: ""    # Set via install script for encrypted SSL keys
