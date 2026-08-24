@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from pydantic import model_validator
+from sqlalchemy import URL
 from typing import Optional
 
 class Settings(BaseSettings):
@@ -55,15 +56,29 @@ class Settings(BaseSettings):
 
     @model_validator(mode='after')
     def build_database_url(self):
-        """如果没有提供 database_url，则根据 MySQL 配置构建"""
+        """如果没有提供 database_url，则根据数据库配置构建。"""
         if not self.database_url:
             if self.pgsql_host:
                 if self.pgsql_password and self.pgsql_user:
-                    self.database_url = f"postgresql+asyncpg://{self.pgsql_user}:{self.pgsql_password}@{self.pgsql_host}:{self.pgsql_port}/{self.pgsql_database}"
+                    self.database_url = URL.create(
+                        "postgresql+asyncpg",
+                        username=self.pgsql_user,
+                        password=self.pgsql_password,
+                        host=self.pgsql_host,
+                        port=self.pgsql_port,
+                        database=self.pgsql_database,
+                    ).render_as_string(hide_password=False)
                 else:
                     self.database_url = f"postgresql+asyncpg://{self.pgsql_host}:{self.pgsql_port}/{self.pgsql_database}"
             elif self.mysql_password and self.mysql_user:
-                self.database_url = f"mysql+aiomysql://{self.mysql_user}:{self.mysql_password}@{self.mysql_host}:{self.mysql_port}/{self.mysql_database}"
+                self.database_url = URL.create(
+                    "mysql+aiomysql",
+                    username=self.mysql_user,
+                    password=self.mysql_password,
+                    host=self.mysql_host,
+                    port=self.mysql_port,
+                    database=self.mysql_database,
+                ).render_as_string(hide_password=False)
             else:
                 self.database_url = f"mysql+aiomysql://{self.mysql_host}:{self.mysql_port}/{self.mysql_database}"
         return self
