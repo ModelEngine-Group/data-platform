@@ -52,7 +52,7 @@ RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
 
 # Preload the tokenizer vocabulary so knowledge-base operations work offline.
 RUN mkdir -p "$TIKTOKEN_CACHE_DIR" \
-    && python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
+    && python -c "import tiktoken; [tiktoken.get_encoding(name) for name in ('cl100k_base', 'o200k_base')]"
 
 # Download NLTK data
 RUN python -c "import nltk; nltk.download(['punkt_tab','averaged_perceptron_tagger_eng'], download_dir='/usr/local/nltk_data')"
