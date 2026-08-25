@@ -26,7 +26,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     POETRY_VERSION=2.2.1 \
     POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_CREATE=false \
-    POETRY_CACHE_DIR=/tmp/poetry_cache
+    POETRY_CACHE_DIR=/tmp/poetry_cache \
+    TIKTOKEN_CACHE_DIR=/opt/tiktoken-cache
 
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 
@@ -48,6 +49,10 @@ COPY runtime/datamate-python/pyproject.toml runtime/datamate-python/poetry.lock*
 # --only main: only install main dependencies, not dev dependencies
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
     poetry install --no-root --only main
+
+# Preload the tokenizer vocabulary so knowledge-base operations work offline.
+RUN mkdir -p "$TIKTOKEN_CACHE_DIR" \
+    && python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"
 
 # Download NLTK data
 RUN python -c "import nltk; nltk.download(['punkt_tab','averaged_perceptron_tagger_eng'], download_dir='/usr/local/nltk_data')"
