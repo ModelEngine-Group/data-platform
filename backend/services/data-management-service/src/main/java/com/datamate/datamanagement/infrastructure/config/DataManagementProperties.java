@@ -10,7 +10,7 @@ import java.util.List;
  * 数据管理服务配置属性
  */
 @Configuration
-@ConfigurationProperties(prefix = "datamanagement")
+@ConfigurationProperties(prefix = "datamate.datamanagement")
 public class DataManagementProperties {
 
     private FileStorage fileStorage = new FileStorage();

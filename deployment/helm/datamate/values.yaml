@@ -170,6 +170,10 @@ backend:
       mountPath: /operators
 
 backend-python:
+  securityContext:
+    capabilities:
+      add:
+        - SYS_ADMIN
   nodeSelector: {}
   tolerations: []
   env:

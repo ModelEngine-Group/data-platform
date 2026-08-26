@@ -4,6 +4,9 @@ datamate:
       upload-dir: ${FILE_UPLOAD_DIR:./uploads}
       max-file-size: 10485760   # 10MB
       max-request-size: 52428800 # 50MB
+      allowed-source-dirs:
+        - ${DATASET_BASE_PATH:/dataset}
+        - ${FILE_UPLOAD_DIR:./uploads}
     cache:
       ttl: 3600
       max-size: 1000
