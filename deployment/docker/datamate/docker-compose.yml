@@ -75,6 +75,18 @@ services:
     volumes:
       - log_volume:/var/log/datamate
     networks: [ datamate ]
+    healthcheck:
+      # No Spring Boot Actuator on this image (see backend/api-gateway/pom.xml),
+      # so there's no dedicated /health path -- just confirm the gateway is
+      # accepting and completing HTTP requests on its own port. curl exits 0 on
+      # any completed response (including 404), and only fails on a connection
+      # error, which is exactly the "is the process up and routing" signal we
+      # need for depends_on: condition: service_healthy below.
+      test: [ "CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8080/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   datamate-frontend:
     container_name: datamate-frontend
@@ -89,8 +101,12 @@ services:
       - frontend_log_volume:/var/log/datamate/frontend
     networks: [ datamate ]
     depends_on:
-      - datamate-backend
-      - datamate-backend-python
+      datamate-gateway:
+        condition: service_healthy
+      datamate-backend:
+        condition: service_started
+      datamate-backend-python:
+        condition: service_started
 
   datamate-database:
     container_name: datamate-database
@@ -111,9 +127,11 @@ services:
     container_name: datamate-runtime
     image: ${REGISTRY:-}datamate-runtime:${VERSION:-latest}
     restart: on-failure
+    shm_size: "10gb"
     environment:
       RAY_DEDUP_LOGS: "0"
       RAY_TQDM_PATCH_PRINT: "0"
+      RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
       LOG_ROTATION_MAX_SIZE: ${LOG_ROTATION_MAX_SIZE:-100MB}
       LOG_ROTATION_BACKUP_COUNT: ${LOG_ROTATION_BACKUP_COUNT:-30}
       PG_HOST: "datamate-database"
