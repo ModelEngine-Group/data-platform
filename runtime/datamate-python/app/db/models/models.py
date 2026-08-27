@@ -4,7 +4,7 @@ from app.db.models.base_entity import BaseEntity
 
 
 class Models(BaseEntity):
-    """模型配置表，对应表 t_models。模型为系统级配置，RAG/生成等按 ID 引用时不受数据权限过滤。
+    """模型配置表，对应表 t_models。普通用户按创建者隔离，管理员可跨用户管理。
 
     CREATE TABLE IF NOT EXISTS t_models (
         id         VARCHAR(36) PRIMARY KEY COMMENT '主键ID',
@@ -24,6 +24,7 @@ class Models(BaseEntity):
     """
 
     __tablename__ = "t_models"
+    __admin_ignore_data_scope__ = True
 
     id = Column(String(36), primary_key=True, index=True, comment="主键ID")
     model_name = Column(String(100), nullable=False, comment="模型名称（如 qwen2）")

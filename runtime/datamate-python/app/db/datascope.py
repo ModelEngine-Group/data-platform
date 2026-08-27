@@ -3,6 +3,7 @@ from typing import List, Optional
 
 _current_user: ContextVar[Optional[str]] = ContextVar("_current_user", default=None)
 SYSTEM_USER = "system"
+ADMIN_USER = "admin"
 
 
 class DataScopeHandle:
@@ -25,6 +26,10 @@ class DataScopeHandle:
     @staticmethod
     def get_user_info() -> Optional[str]:
         return _current_user.get()
+
+    @staticmethod
+    def is_admin() -> bool:
+        return DataScopeHandle.get_user_info() == ADMIN_USER
 
     @staticmethod
     def allowed_users() -> List[str]:

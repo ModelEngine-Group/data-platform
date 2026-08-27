@@ -37,17 +37,27 @@ def _apply_data_scope(orm_execute_state):
     allowed = DataScopeHandle.allowed_users()
     if not allowed or len(allowed) == 0:
         return
+    is_admin = DataScopeHandle.is_admin()
 
-    # predicate builder: return None to skip for classes that opt-out
-    def criteria_fn(cls):
-        # skip if the mapped class explicitly disables data-scope
-        if getattr(cls, "__ignore_data_scope__", False):
-            return true()
-        # some classes may not have created_by column; guard dynamically
-        col = getattr(cls, "created_by", None)
-        if col is None:
-            return true()
-        return col.in_(allowed)
+    if is_admin:
+        def criteria_fn(cls):
+            if (
+                getattr(cls, "__ignore_data_scope__", False)
+                or getattr(cls, "__admin_ignore_data_scope__", False)
+            ):
+                return true()
+            col = getattr(cls, "created_by", None)
+            if col is None:
+                return true()
+            return col.in_(allowed)
+    else:
+        def criteria_fn(cls):
+            if getattr(cls, "__ignore_data_scope__", False):
+                return true()
+            col = getattr(cls, "created_by", None)
+            if col is None:
+                return true()
+            return col.in_(allowed)
 
     # apply loader-level criteria to all subclasses of BaseEntity
     orm_execute_state.statement = orm_execute_state.statement.options(

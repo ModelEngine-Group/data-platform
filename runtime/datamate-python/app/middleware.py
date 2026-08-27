@@ -50,4 +50,3 @@ class UserContextMiddleware(BaseHTTPMiddleware):
 # Re-export ExceptionHandlingMiddleware for backward compatibility
 
 __all__ = ['UserContextMiddleware']
-

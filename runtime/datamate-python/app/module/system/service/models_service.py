@@ -35,6 +35,13 @@ PROVIDERS = [
 ]
 
 
+def _created_by_match(user: str):
+    return (
+        (Models.created_by == user)
+        | ((Models.created_by.is_(None)) & (user == SYSTEM_USER))
+    )
+
+
 def _orm_to_response(row: Models) -> ModelsResponse:
     return ModelsResponse(
         id=row.id,
@@ -115,10 +122,7 @@ class ModelsService:
 
         # 检查 uk_model_provider (model_name, provider, created_by) 是否存在且已删除
         effective_user = (DataScopeHandle.get_user_info() or "").strip() or SYSTEM_USER
-        created_by_match = (
-            (Models.created_by == effective_user)
-            | ((Models.created_by.is_(None)) & (effective_user == SYSTEM_USER))
-        )
+        created_by_match = _created_by_match(effective_user)
         deleted_row = (
             await self.db.execute(
                 select(Models).where(
@@ -143,7 +147,11 @@ class ModelsService:
             if want_default:
                 await self.db.execute(
                     update(Models)
-                    .where(Models.type == req.type.value, Models.is_default == True)
+                    .where(
+                        Models.type == req.type.value,
+                        Models.is_default == True,
+                        created_by_match,
+                    )
                     .values(is_default=False)
                 )
             entity.is_default = want_default
@@ -160,6 +168,7 @@ class ModelsService:
                     (Models.is_deleted == False) | (Models.is_deleted.is_(None)),
                     Models.type == req.type.value,
                     Models.is_default == True,
+                    created_by_match,
                 )
             )
         ).scalar_one_or_none()
@@ -170,7 +179,11 @@ class ModelsService:
         else:
             await self.db.execute(
                 update(Models)
-                .where(Models.type == req.type.value, Models.is_default == True)
+                .where(
+                    Models.type == req.type.value,
+                    Models.is_default == True,
+                    created_by_match,
+                )
                 .values(is_default=False)
             )
             is_default = req.isDefault if req.isDefault is not None else False
@@ -220,9 +233,14 @@ class ModelsService:
 
         want_default = req.isDefault if req.isDefault is not None else False
         if (entity.is_default is not True) and want_default:
+            owner = (entity.created_by or "").strip() or SYSTEM_USER
             await self.db.execute(
                 update(Models)
-                .where(Models.type == req.type.value, Models.is_default == True)
+                .where(
+                    Models.type == req.type.value,
+                    Models.is_default == True,
+                    _created_by_match(owner),
+                )
                 .values(is_default=False)
             )
         entity.is_default = want_default

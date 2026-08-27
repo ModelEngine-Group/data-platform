@@ -2,6 +2,12 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
+from sqlalchemy import select
+
+from app.db.datascope import DataScopeHandle
+from app.db.models.dataset_management import Dataset
+from app.db.models.models import Models
+from app.db.session import _apply_data_scope
 from app.module.system.service.common_service import get_model_by_id
 
 
@@ -65,3 +71,43 @@ def test_get_model_by_id_returns_exact_scalar_object() -> None:
 
     fetched = _run(get_model_by_id(db, "m100"))
     assert fetched is model_obj
+
+
+def _compile_scoped_query(model, user: str) -> str:
+    DataScopeHandle.set_user_info(user)
+    try:
+        state = SimpleNamespace(is_select=True, statement=select(model))
+        _apply_data_scope(state)
+        return str(state.statement.compile(compile_kwargs={"literal_binds": True}))
+    finally:
+        DataScopeHandle.remove_user_info()
+
+
+def test_regular_user_model_query_keeps_creator_scope() -> None:
+    sql = _compile_scoped_query(Models, "alice")
+
+    assert "t_models.created_by IN ('alice', 'system')" in sql
+
+
+def test_admin_model_query_bypasses_creator_scope() -> None:
+    sql = _compile_scoped_query(Models, "admin")
+
+    assert "t_models.created_by IN" not in sql
+
+
+def test_similar_username_does_not_gain_admin_model_access() -> None:
+    sql = _compile_scoped_query(Models, "Admin")
+
+    assert "t_models.created_by IN ('Admin', 'system')" in sql
+
+
+def test_system_user_does_not_gain_admin_model_access() -> None:
+    sql = _compile_scoped_query(Models, "system")
+
+    assert "t_models.created_by IN ('system', 'system')" in sql
+
+
+def test_admin_query_keeps_scope_for_unmarked_models() -> None:
+    sql = _compile_scoped_query(Dataset, "admin")
+
+    assert "t_dm_datasets.created_by IN ('admin', 'system')" in sql
