@@ -1,0 +1,25 @@
+name: 'HistoQC'
+description: '集成HistoQC输出处理 : 提取伪影坐标(GeoJSON)、汇总质量指标(TSV)并关联全套掩码图像(PNG)。'
+language: 'python'
+vendor: 'huawei'
+raw_id: 'HistoQCMapper'
+version: '1.0.0'
+modal: 'multimodal'   # 多模态，因为涉及文本(TSV/JSON)和图像(PNG)
+inputs: 'image'
+outputs: 'multimodal'
+settings:
+  scaleFactor:
+    name: '缩放倍率'
+    description: '掩码相对于原图的下采样倍率(HistoQC log_factor)。'
+    type: 'inputNumber'
+    defaultVal: 1.0
+  exportFullImages:
+    name: '导出全套图像'
+    description: '是否将所有生成的掩码图(Equalized/Mask/Blur)关联至输出。'
+    type: 'switch'
+    defaultVal: 'true'
+  includeStats:
+    name: '包含指标统计'
+    description: '是否从results.tsv中提取该切片的具体质量.'
+    type: 'switch'
+    defaultVal: 'true'

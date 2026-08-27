@@ -1,0 +1,15 @@
+# Python >= 3.11
+numpy==1.23.5
+opencv-python-headless==4.9.0.80
+openslide-python==1.4.1
+pandas==2.0.3
+Pillow==9.4.0
+scikit-image==0.19.3
+scikit-learn==1.2.1
+scipy==1.10.0
+matplotlib==3.7.1
+PyYAML==6.0.3
+requests==2.28.2
+tqdm==4.67.1
+geojson==3.1.0
+shapely==2.0.7
